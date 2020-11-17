@@ -1,7 +1,7 @@
 <template>
     <div class="wrap">
         <div>
-            <div>产品概览</div>
+            <div>产品概览 <span @click="addAll(myArray)">全部添加</span></div>
             <Draggable
                 class="cards-group"
                 v-model="myArray"
@@ -20,7 +20,7 @@
                     </div>
                 </transition-group>
             </Draggable>
-            <div>manager1</div>
+            <div>基金经理1 <span @click="addAll(manager1)">全部添加</span></div>
             <Draggable
                 class="cards-group"
                 v-model="manager1"
@@ -39,7 +39,7 @@
                     </div>
                 </transition-group>
             </Draggable>
-            <div>manager2</div>
+            <div>基金经理2 <span @click="addAll(manager2)">全部添加</span></div>
             <Draggable
                 class="cards-group"
                 v-model="manager2"
@@ -83,7 +83,11 @@
                 <transition-group>
                     <div v-for="(element, index) in myArray2" :key="element.id" :class="[element.delete ? 'to-right' : '', element.choosed ? 'border' : '', 'list-group-item', 'my-list-group-item', 'cursor-auto']" @click="chooseItem(element, index)">
                         <div v-show="element.choosed" class="edit">
-                            <span>编辑</span><span @click="moveUp(element, index)">上移</span><span @click="moveDown(element, index)">下移</span><span @click="unChoosed(element, index)">×</span>
+                            <span>编辑</span>
+                            <span @click="moveUp(element, index)">上移</span>
+                            <span @click="moveDown(element, index)">下移</span>
+                            <span @click="copyItem(element, index)">复制</span>
+                            <span @click="unChoosed(element, index)">×</span>
                         </div>
                         <i v-show="element.choosed" @click="clickMove(element)" class="el-icon-s-unfold handle move-icon"></i>
                         {{ element.name }}
@@ -212,7 +216,7 @@ export default {
         // item1,item2,item3,item4,item5,item6
     },
     mounted() {
-        console.log(this.allComponents)
+        console.log(this.myArray2)
     },
     methods: {
         ///添加按钮  *****  add
@@ -234,9 +238,23 @@ export default {
                 console.log('not clone')
             }
         },
+        //全部添加  *****  add
+        addAll(arr) {
+            let choosed_index = this.myArray2.findIndex((item) => item.choosed)
+            arr = arr.map((item, index) => {
+                item.id = new Date().getTime() + 'id' + index
+                // item.choosed = false
+                return item
+            })
+            this.myArray2 = [...this.myArray2, ...arr]
+            console.log(this.myArray2)
+        },
         //删除
         deleteItem(ele, index) {
-            this.myArray2[index].delete = true
+            let obj = Object.assign({}, ele)
+            obj.delete = true
+            obj.choosed = false
+            this.$set(this.myArray2, index, obj)
             setTimeout(() => {
                 this.myArray2.splice(index, 1)
             }, 200)
@@ -262,29 +280,38 @@ export default {
         },
         //选中状态才可以拖动
         onMove(ev) {
-            console.log(ev);
+            console.log(ev)
             return ev.relatedContext.element.choosed ? true : false
         },
         //上移一个
-        moveUp(ele,index){
+        moveUp(ele, index) {
             let obj = Object.assign({}, ele)
             obj.choosed = true
-            this.myArray2.splice(index,1)
-            this.myArray2.splice(index-1,0,obj)
-            this.$set(this.myArray2, this.myArray2[index-1], obj)
+            this.myArray2.splice(index, 1)
+            this.myArray2.splice(index - 1, 0, obj)
+            this.$set(this.myArray2, this.myArray2[index - 1], obj)
         },
         //下移一个
-        moveDown(ele,index){
+        moveDown(ele, index) {
             let obj = Object.assign({}, ele)
             obj.choosed = true
-            this.myArray2.splice(index,1)
-            this.myArray2.splice(index+1,0,obj)
-            this.$set(this.myArray2, this.myArray2[index-1], obj)
+            this.myArray2.splice(index, 1)
+            this.myArray2.splice(index + 1, 0, obj)
+            this.$set(this.myArray2, this.myArray2[index + 1], obj)
+            console.log(this.myArray2)
+        },
+        //复制一个到后面
+        copyItem(ele, index) {
+            let obj = Object.assign({}, ele)
+            obj.id = new Date().getTime() + 'id'
+            obj.choosed = false
+            this.myArray2.splice(index + 1, 0, obj)
+            this.$set(this.myArray2, this.myArray2[index + 1], obj)
         },
         //取消选中
-        unChoosed(ele,index){
+        unChoosed(ele, index) {
             let obj = Object.assign({}, ele)
-            obj.choosed=false
+            obj.choosed = false
             this.myArray2[index] = obj
         },
         clickMove(ele) {
@@ -386,9 +413,8 @@ export default {
         position: absolute;
         top: -15px;
         right: -15px;
-        
-        &>span{
-            
+
+        & > span {
             cursor: pointer;
             margin-right: 3px;
         }

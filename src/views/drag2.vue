@@ -81,8 +81,10 @@
                 handle=".handle"
             >
                 <transition-group>
-                    <div v-for="(element, index) in myArray2" :key="element.id" :class="[element.delete ? 'to-right' : '', element.choosed ? 'border' : '','list-group-item','my-list-group-item', 'cursor-auto', ]" @click="chooseItem(element, index)">
-                        <div v-show="element.choosed">编辑</div>
+                    <div v-for="(element, index) in myArray2" :key="element.id" :class="[element.delete ? 'to-right' : '', element.choosed ? 'border' : '', 'list-group-item', 'my-list-group-item', 'cursor-auto']" @click="chooseItem(element, index)">
+                        <div v-show="element.choosed" class="edit">
+                            <span>编辑</span><span @click="moveUp(element, index)">上移</span><span @click="moveDown(element, index)">下移</span><span @click="unChoosed(element, index)">×</span>
+                        </div>
                         <i v-show="element.choosed" @click="clickMove(element)" class="el-icon-s-unfold handle move-icon"></i>
                         {{ element.name }}
                         <el-button circle @click.stop="deleteItem(element, index)">×</el-button>
@@ -215,10 +217,10 @@ export default {
     methods: {
         ///添加按钮  *****  add
         addItem(ele) {
-            let choosed_index = this.myArray2.findIndex(item =>item.choosed)
+            let choosed_index = this.myArray2.findIndex((item) => item.choosed)
             let obj = Object.assign({}, ele)
             obj.id = new Date().getTime() + 'id'
-            choosed_index === -1 ? this.myArray2.push(obj) : this.myArray2.splice(choosed_index+1,0,obj) // 添加到选中元素后面
+            choosed_index === -1 ? this.myArray2.push(obj) : this.myArray2.splice(choosed_index + 1, 0, obj) // 添加到选中元素后面
         },
         //拖拽结束  *****  add
         end1(ev) {
@@ -260,7 +262,30 @@ export default {
         },
         //选中状态才可以拖动
         onMove(ev) {
+            console.log(ev);
             return ev.relatedContext.element.choosed ? true : false
+        },
+        //上移一个
+        moveUp(ele,index){
+            let obj = Object.assign({}, ele)
+            obj.choosed = true
+            this.myArray2.splice(index,1)
+            this.myArray2.splice(index-1,0,obj)
+            this.$set(this.myArray2, this.myArray2[index-1], obj)
+        },
+        //下移一个
+        moveDown(ele,index){
+            let obj = Object.assign({}, ele)
+            obj.choosed = true
+            this.myArray2.splice(index,1)
+            this.myArray2.splice(index+1,0,obj)
+            this.$set(this.myArray2, this.myArray2[index-1], obj)
+        },
+        //取消选中
+        unChoosed(ele,index){
+            let obj = Object.assign({}, ele)
+            obj.choosed=false
+            this.myArray2[index] = obj
         },
         clickMove(ele) {
             console.log('click move', ele)
@@ -273,14 +298,17 @@ export default {
 .wrap {
     display: flex;
     justify-content: space-between;
-    width: 80%;
+    width: 95%;
 
     & > div:first-child {
         width: 30%;
         margin-right: 15px;
     }
     & > div:last-child {
+        padding-top: 20px;
         width: 70%;
+        height: 300px;
+        overflow-y: auto;
     }
 }
 .draggable-item {
@@ -293,9 +321,10 @@ export default {
 .cards-group {
 }
 .empty-group {
+    width: 90%;
     height: 300px;
     border: 1px solid blueviolet;
-    overflow-y: auto;
+    // overflow-y: auto;
 
     & > span {
         display: block;
@@ -349,7 +378,20 @@ export default {
     // overflow: hidden;
 }
 //选中元素
-.my-list-group-item{
-    
+.my-list-group-item {
+    position: relative;
+    .edit {
+        padding: 3px 10px;
+        background-color: rgba($color: #9cccec, $alpha: 0.8);
+        position: absolute;
+        top: -15px;
+        right: -15px;
+        
+        &>span{
+            
+            cursor: pointer;
+            margin-right: 3px;
+        }
+    }
 }
 </style>

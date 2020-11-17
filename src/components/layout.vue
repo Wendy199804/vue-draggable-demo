@@ -1,6 +1,6 @@
 <template>
   <div class="app-main">
-    <header class="app-header">Vue 组件拖拽 demo</header>
+    <header class="app-header"></header>
     <div class="app-container">
       <router-view/>
     </div>

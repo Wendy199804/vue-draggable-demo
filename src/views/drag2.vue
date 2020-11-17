@@ -95,9 +95,15 @@
                         {{ element.name }}
                         <!-- <el-button circle @click.stop="deleteItem(element, index)">×</el-button> -->
                         <component :is="allComponents[element.component]"></component>
-                        <div v-show="element.articleNum > 0" @click.stop class="textarea-wrap">
+                        <div v-show="element.articlelist && element.articlelist.length > 0" @click.stop class="textarea-wrap">
                             <!-- <textarea>我是一个文本框。</textarea> -->
-                            <div v-for="item in element.articleNum" :key="item" :contenteditable="element.choosed" class="custom-article">这是一个文案，点击可以编辑</div>
+                            <div v-for="(item, index2) in element.articlelist" :key="index2">
+                                <!-- 文案个数 -->
+                                <div v-show="element.choosed">文字颜色<el-color-picker v-model="item.color" size="mini"></el-color-picker></div>
+                                <div :contenteditable="element.choosed" @focus="articleFocus(item, index, index2, $event)" @blur="articleBlur(item, index, index2, $event)" :style="{ color: item.color }" class="custom-article">
+                                    这是一个文案，点击可以编辑
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </transition-group>
@@ -211,7 +217,15 @@ export default {
                     manager_id: 2,
                 },
             ],
-            myArray2: [{ id: 7, name: 'g', delete: false, component: 'item_1', articleNum: 0 }],
+            myArray2: [
+                {
+                    id: 7,
+                    name: 'g',
+                    delete: false,
+                    component: 'item_1',
+                    articleNum: 0,
+                },
+            ],
             options: {
                 animation: 2,
             },
@@ -231,7 +245,7 @@ export default {
             let obj = Object.assign({}, ele)
             obj.id = new Date().getTime() + 'id'
             obj.articleNum = 0
-            // obj.article = []
+            obj.articlelist = []
             choosed_index === -1 ? this.myArray2.push(obj) : this.myArray2.splice(choosed_index + 1, 0, obj) // 添加到选中元素后面
         },
         //拖拽结束  *****  add
@@ -242,7 +256,7 @@ export default {
                 let obj = Object.assign({}, this.myArray2[ev.newDraggableIndex])
                 obj.id = new Date().getTime() + 'id'
                 obj.articleNum = 0
-                // obj.article = []
+                obj.articlelist = []
                 this.myArray2[ev.newDraggableIndex] = Object.assign({}, obj)
             } else {
                 console.log('not clone')
@@ -315,18 +329,20 @@ export default {
             let obj = Object.assign({}, ele)
             obj.id = new Date().getTime() + 'id'
             obj.articleNum = 0
-            // obj.article = []
+            obj.articlelist = []
             obj.choosed = false
             this.myArray2.splice(index + 1, 0, obj)
             this.$set(this.myArray2, this.myArray2[index + 1], obj)
         },
         //添加文案
         addArticle(ele, index) {
-            console.log(ele)
+            console.log(this.myArray2)
             let obj = Object.assign({}, ele)
             obj.articleNum = ele.articleNum + 1
+            obj.articlelist.push({ color: '#333', focus: false })
             obj.choosed = true
             this.$set(this.myArray2, index, obj)
+            console.log(this.myArray2)
             // this.$set(this.myArray2[index], 'choosed',true)
 
             // console.log(obj,this.myArray2)
@@ -336,6 +352,20 @@ export default {
             let obj = Object.assign({}, ele)
             obj.choosed = false
             this.$set(this.myArray2, index, obj)
+        },
+        //文案编辑聚焦 (原定：聚焦的时候才能改变颜色)
+        articleFocus(ele, index, index2, ev) {
+            let obj = Object.assign({},this.myArray2[index])
+            obj.articlelist[index2].focus = true
+            this.$set(this.myArray2, index, obj)
+            console.log('聚焦', ev)
+        },
+        //文案编辑失焦
+        articleBlur(ele, index, index2, ev) {
+            let obj = Object.assign({},this.myArray2[index])
+            obj.articlelist[index2].focus = false
+            this.$set(this.myArray2, index, obj)
+            console.log('失焦', ev)
         },
         clickMove(ele) {
             console.log('click move', ele)
@@ -450,7 +480,7 @@ export default {
     width: auto;
     border: 1px dashed fuchsia;
     padding: 5px;
-    & > div {
+    .custom-article {
         outline: none;
         border: 1px solid #dddddd;
         padding: 5px 10px;

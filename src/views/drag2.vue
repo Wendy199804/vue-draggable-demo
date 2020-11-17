@@ -33,7 +33,7 @@
                 @end="end1"
             >
                 <transition-group>
-                    <div v-for="element in myArray" :key="element.id" class="draggable-item">
+                    <div v-for="element in manager1" :key="element.id" class="draggable-item">
                         {{ element.name }}
                         <el-button circle @click="addItem(element)">+</el-button>
                     </div>
@@ -52,7 +52,7 @@
                 @end="end1"
             >
                 <transition-group>
-                    <div v-for="element in myArray" :key="element.id" class="draggable-item">
+                    <div v-for="element in manager2" :key="element.id" class="draggable-item">
                         {{ element.name }}
                         <el-button circle @click="addItem(element)">+</el-button>
                     </div>
@@ -81,25 +81,24 @@
                 handle=".handle"
             >
                 <transition-group>
-                    <div v-for="(element, index) in myArray2" :key="element.id" :class="[element.delete ? 'to-right' : '', element.choosed ? 'border' : '', 'list-group-item', 'my-list-group-item', 'cursor-auto']" @dblclick="chooseItem(element, index)">
+                    <div v-for="(element, index) in myArray2" :key="element.id" :class="[element.delete ? 'to-right' : '', element.choosed ? 'border' : '', 'list-group-item', 'my-list-group-item', 'cursor-auto']" @click="chooseItem(element, index)">
                         <div v-show="element.choosed" class="edit">
-                            <span @click="unChoosed(element, index)">取消选中</span>
-                            <span @click="moveUp(element, index)">上移</span>
-                            <span @click="moveDown(element, index)">下移</span>
-                            <span @click="copyItem(element, index)">复制</span>
-                            <span @click="deleteItem(element, index)">删除</span>
-                            <span @click="addArticle(element, index)">添加文案</span>
+                            <span @click.stop="unChoosed(element, index)">取消选中</span>
+                            <span @click.stop="moveUp(element, index)">上移</span>
+                            <span @click.stop="moveDown(element, index)">下移</span>
+                            <span @click.stop="copyItem(element, index)">复制</span>
+                            <span @click.stop="deleteItem(element, index)">删除</span>
+                            <span @click.stop="addArticle(element, index)">添加文案</span>
                         </div>
                         <i v-show="element.choosed" class="el-icon-s-unfold handle move-icon"></i>
                         <i v-show="element.choosed" @click.stop="clickMove(element)" class="el-icon-s-unfold move-icon"></i>
                         {{ element.name }}
                         <!-- <el-button circle @click.stop="deleteItem(element, index)">×</el-button> -->
                         <component :is="allComponents[element.component]"></component>
-                        <div v-show="element.articleNum>0" @click.stop class="textarea-wrap" >
+                        <div v-show="element.articleNum > 0" @click.stop class="textarea-wrap">
                             <!-- <textarea>我是一个文本框。</textarea> -->
                             <div v-for="item in element.articleNum" :key="item" :contenteditable="element.choosed" class="custom-article">这是一个文案，点击可以编辑</div>
                         </div>
-                        
                     </div>
                 </transition-group>
             </Draggable>
@@ -118,7 +117,7 @@ export default {
             allComponents: allComponents,
             myArray: [
                 { id: 1, name: 'a', delete: false, component: 'item_1' },
-                { id: 2, name: 'b', delete: false, component: 'item_2' },
+                { id: 2, name: '??', delete: false, component: 'item_2' },
                 { id: 3, name: 'c', delete: false, component: 'item_3' },
                 { id: 4, name: 'd', delete: false, component: 'item_4' },
                 { id: 5, name: 'e', delete: false, component: 'item_5' },
@@ -127,7 +126,7 @@ export default {
             manager1: [
                 {
                     id: 1,
-                    name: 'manager1 a',
+                    name: 'manager1 a1111111111111',
                     delete: false,
                     component: 'item_1',
                     manager_id: 1,
@@ -212,7 +211,7 @@ export default {
                     manager_id: 2,
                 },
             ],
-            myArray2: [{ id: 7, name: 'g', delete: false, component: 'item_1',articleNum:0 }],
+            myArray2: [{ id: 7, name: 'g', delete: false, component: 'item_1', articleNum: 0 }],
             options: {
                 animation: 2,
             },
@@ -258,7 +257,7 @@ export default {
                 return item
             })
             let newarr = JSON.parse(JSON.stringify(arr))
-            this.myArray2 = [...this.myArray2.slice(0,choosed_index+1),...arr,...this.myArray2.slice(choosed_index+1)]
+            this.myArray2 = choosed_index === -1 ? [...this.myArray2, ...arr] : [...this.myArray2.slice(0, choosed_index + 1), ...arr, ...this.myArray2.slice(choosed_index + 1)]
         },
         //删除
         deleteItem(ele, index) {
@@ -322,12 +321,15 @@ export default {
             this.$set(this.myArray2, this.myArray2[index + 1], obj)
         },
         //添加文案
-        addArticle(ele,index){
+        addArticle(ele, index) {
+            console.log(ele)
             let obj = Object.assign({}, ele)
-            obj.articleNum = obj.articleNum + 1
+            obj.articleNum = ele.articleNum + 1
             obj.choosed = true
             this.$set(this.myArray2, index, obj)
-            console.log(obj,this.myArray2);
+            // this.$set(this.myArray2[index], 'choosed',true)
+
+            // console.log(obj,this.myArray2)
         },
         //取消选中
         unChoosed(ele, index) {
@@ -443,12 +445,12 @@ export default {
         }
     }
 }
-.textarea-wrap{
+.textarea-wrap {
     height: auto;
     width: auto;
     border: 1px dashed fuchsia;
     padding: 5px;
-    &>div{
+    & > div {
         outline: none;
         border: 1px solid #dddddd;
         padding: 5px 10px;

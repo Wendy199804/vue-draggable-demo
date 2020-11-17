@@ -81,18 +81,25 @@
                 handle=".handle"
             >
                 <transition-group>
-                    <div v-for="(element, index) in myArray2" :key="element.id" :class="[element.delete ? 'to-right' : '', element.choosed ? 'border' : '', 'list-group-item', 'my-list-group-item', 'cursor-auto']" @click="chooseItem(element, index)">
+                    <div v-for="(element, index) in myArray2" :key="element.id" :class="[element.delete ? 'to-right' : '', element.choosed ? 'border' : '', 'list-group-item', 'my-list-group-item', 'cursor-auto']" @dblclick="chooseItem(element, index)">
                         <div v-show="element.choosed" class="edit">
-                            <span>编辑</span>
+                            <span @click="unChoosed(element, index)">取消选中</span>
                             <span @click="moveUp(element, index)">上移</span>
                             <span @click="moveDown(element, index)">下移</span>
                             <span @click="copyItem(element, index)">复制</span>
-                            <span @click="unChoosed(element, index)">×</span>
+                            <span @click="deleteItem(element, index)">删除</span>
+                            <span @click="addArticle(element, index)">添加文案</span>
                         </div>
-                        <i v-show="element.choosed" @click="clickMove(element)" class="el-icon-s-unfold handle move-icon"></i>
+                        <i v-show="element.choosed" class="el-icon-s-unfold handle move-icon"></i>
+                        <i v-show="element.choosed" @click.stop="clickMove(element)" class="el-icon-s-unfold move-icon"></i>
                         {{ element.name }}
-                        <el-button circle @click.stop="deleteItem(element, index)">×</el-button>
+                        <!-- <el-button circle @click.stop="deleteItem(element, index)">×</el-button> -->
                         <component :is="allComponents[element.component]"></component>
+                        <div v-show="element.articleNum>0" @click.stop class="textarea-wrap" >
+                            <!-- <textarea>我是一个文本框。</textarea> -->
+                            <div v-for="item in element.articleNum" :key="item" :contenteditable="element.choosed" class="custom-article">这是一个文案，点击可以编辑</div>
+                        </div>
+                        
                     </div>
                 </transition-group>
             </Draggable>
@@ -205,7 +212,7 @@ export default {
                     manager_id: 2,
                 },
             ],
-            myArray2: [{ id: 7, name: 'g', delete: false, component: 'item_1' }],
+            myArray2: [{ id: 7, name: 'g', delete: false, component: 'item_1',articleNum:0 }],
             options: {
                 animation: 2,
             },
@@ -224,6 +231,8 @@ export default {
             let choosed_index = this.myArray2.findIndex((item) => item.choosed)
             let obj = Object.assign({}, ele)
             obj.id = new Date().getTime() + 'id'
+            obj.articleNum = 0
+            // obj.article = []
             choosed_index === -1 ? this.myArray2.push(obj) : this.myArray2.splice(choosed_index + 1, 0, obj) // 添加到选中元素后面
         },
         //拖拽结束  *****  add
@@ -233,6 +242,8 @@ export default {
                 // console.log(this.myArray2.length);
                 let obj = Object.assign({}, this.myArray2[ev.newDraggableIndex])
                 obj.id = new Date().getTime() + 'id'
+                obj.articleNum = 0
+                // obj.article = []
                 this.myArray2[ev.newDraggableIndex] = Object.assign({}, obj)
             } else {
                 console.log('not clone')
@@ -246,8 +257,8 @@ export default {
                 // item.choosed = false
                 return item
             })
-            this.myArray2 = [...this.myArray2, ...arr]
-            console.log(this.myArray2)
+            let newarr = JSON.parse(JSON.stringify(arr))
+            this.myArray2 = [...this.myArray2.slice(0,choosed_index+1),...arr,...this.myArray2.slice(choosed_index+1)]
         },
         //删除
         deleteItem(ele, index) {
@@ -260,7 +271,7 @@ export default {
             }, 200)
         },
 
-        //选中
+        //选中（双击）
         chooseItem(ele, index) {
             if (!ele.choosed) {
                 this.myArray2 = this.myArray2.map((item) => {
@@ -304,15 +315,25 @@ export default {
         copyItem(ele, index) {
             let obj = Object.assign({}, ele)
             obj.id = new Date().getTime() + 'id'
+            obj.articleNum = 0
+            // obj.article = []
             obj.choosed = false
             this.myArray2.splice(index + 1, 0, obj)
             this.$set(this.myArray2, this.myArray2[index + 1], obj)
+        },
+        //添加文案
+        addArticle(ele,index){
+            let obj = Object.assign({}, ele)
+            obj.articleNum = obj.articleNum + 1
+            obj.choosed = true
+            this.$set(this.myArray2, index, obj)
+            console.log(obj,this.myArray2);
         },
         //取消选中
         unChoosed(ele, index) {
             let obj = Object.assign({}, ele)
             obj.choosed = false
-            this.myArray2[index] = obj
+            this.$set(this.myArray2, index, obj)
         },
         clickMove(ele) {
             console.log('click move', ele)
@@ -329,12 +350,13 @@ export default {
 
     & > div:first-child {
         width: 30%;
+        height: 700px;
         margin-right: 15px;
     }
     & > div:last-child {
-        padding-top: 20px;
         width: 70%;
-        height: 300px;
+        height: 700px;
+        padding-top: 20px;
         overflow-y: auto;
     }
 }
@@ -349,7 +371,7 @@ export default {
 }
 .empty-group {
     width: 90%;
-    height: 300px;
+    height: 100%;
     border: 1px solid blueviolet;
     // overflow-y: auto;
 
@@ -406,6 +428,7 @@ export default {
 }
 //选中元素
 .my-list-group-item {
+    height: auto;
     position: relative;
     .edit {
         padding: 3px 10px;
@@ -418,6 +441,18 @@ export default {
             cursor: pointer;
             margin-right: 3px;
         }
+    }
+}
+.textarea-wrap{
+    height: auto;
+    width: auto;
+    border: 1px dashed fuchsia;
+    padding: 5px;
+    &>div{
+        outline: none;
+        border: 1px solid #dddddd;
+        padding: 5px 10px;
+        margin-bottom: 5px;
     }
 }
 </style>

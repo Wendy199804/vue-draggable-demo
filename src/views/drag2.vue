@@ -99,7 +99,7 @@
                             <!-- <textarea>我是一个文本框。</textarea> -->
                             <div v-for="(item, index2) in element.articlelist" :key="index2">
                                 <!-- 文案个数 -->
-                                <div v-show="item.focus">文字颜色<el-color-picker v-model="item.color" size="mini"></el-color-picker></div>
+                                <div v-show="item.focus">文字颜色<el-color-picker v-model="item.color" @change="fontColorChange(index)" size="mini"></el-color-picker></div>
                                 <div :contenteditable="element.choosed" @focus="articleFocus(item, index, index2, $event)" @blur="articleBlur(item, index, index2, $event)" :style="{ color: item.color }" class="custom-article">
                                     这是一个文案，点击可以编辑
                                 </div>
@@ -352,6 +352,15 @@ export default {
         },
         //文案编辑失焦
         articleBlur(ele, index, index2, ev) {
+            // let obj = Object.assign({}, this.myArray2[index])
+            // obj.articlelist = this.myArray2[index].articlelist.map((item, i) => {
+            //     item.focus = 0
+            //     return { ...item }
+            // })
+            // this.$set(this.myArray2, index, obj)
+        },
+        //文字颜色变化
+        fontColorChange(index){
             let obj = Object.assign({}, this.myArray2[index])
             obj.articlelist = this.myArray2[index].articlelist.map((item, i) => {
                 item.focus = 0

@@ -1,7 +1,7 @@
 <template>
     <div class="wrap">
         <div>
-            <div>产品概览 <span @click="addAll(myArray)">全部添加</span></div>
+            <div>产品概览 <span @click="addAll(myArray)" class="cursor-pointer">全部添加</span></div>
             <Draggable
                 class="cards-group"
                 v-model="myArray"
@@ -20,7 +20,7 @@
                     </div>
                 </transition-group>
             </Draggable>
-            <div>基金经理1 <span @click="addAll(manager1)">全部添加</span></div>
+            <div>基金经理1 <span @click="addAll(manager1)" class="cursor-pointer">全部添加</span></div>
             <Draggable
                 class="cards-group"
                 v-model="manager1"
@@ -39,7 +39,7 @@
                     </div>
                 </transition-group>
             </Draggable>
-            <div>基金经理2 <span @click="addAll(manager2)">全部添加</span></div>
+            <div>基金经理2 <span @click="addAll(manager2)" class="cursor-pointer">全部添加</span></div>
             <Draggable
                 class="cards-group"
                 v-model="manager2"
@@ -99,7 +99,7 @@
                             <!-- <textarea>我是一个文本框。</textarea> -->
                             <div v-for="(item, index2) in element.articlelist" :key="index2">
                                 <!-- 文案个数 -->
-                                <div v-show="element.choosed">文字颜色<el-color-picker v-model="item.color" size="mini"></el-color-picker></div>
+                                <div v-show="item.focus">文字颜色<el-color-picker v-model="item.color" size="mini"></el-color-picker></div>
                                 <div :contenteditable="element.choosed" @focus="articleFocus(item, index, index2, $event)" @blur="articleBlur(item, index, index2, $event)" :style="{ color: item.color }" class="custom-article">
                                     这是一个文案，点击可以编辑
                                 </div>
@@ -233,10 +233,6 @@ export default {
     },
     components: {
         Draggable,
-        // item1,item2,item3,item4,item5,item6
-    },
-    mounted() {
-        console.log(this.myArray2)
     },
     methods: {
         ///添加按钮  *****  add
@@ -251,8 +247,6 @@ export default {
         //拖拽结束  *****  add
         end1(ev) {
             if (ev.pullMode === 'clone') {
-                console.log('clone !! newDraggableIndex = ', ev.newDraggableIndex, ev.newIndex)
-                // console.log(this.myArray2.length);
                 let obj = Object.assign({}, this.myArray2[ev.newDraggableIndex])
                 obj.id = new Date().getTime() + 'id'
                 obj.articleNum = 0
@@ -267,7 +261,8 @@ export default {
             let choosed_index = this.myArray2.findIndex((item) => item.choosed)
             arr = arr.map((item, index) => {
                 item.id = new Date().getTime() + 'id' + index
-                // item.choosed = false
+                item.articleNum = 0
+                item.articlelist = []
                 return item
             })
             let newarr = JSON.parse(JSON.stringify(arr))
@@ -304,7 +299,6 @@ export default {
         },
         //选中状态才可以拖动
         onMove(ev) {
-            console.log(ev)
             return ev.relatedContext.element.choosed ? true : false
         },
         //上移一个
@@ -322,7 +316,6 @@ export default {
             this.myArray2.splice(index, 1)
             this.myArray2.splice(index + 1, 0, obj)
             this.$set(this.myArray2, this.myArray2[index + 1], obj)
-            console.log(this.myArray2)
         },
         //复制一个到后面
         copyItem(ele, index) {
@@ -336,16 +329,11 @@ export default {
         },
         //添加文案
         addArticle(ele, index) {
-            console.log(this.myArray2)
             let obj = Object.assign({}, ele)
             obj.articleNum = ele.articleNum + 1
             obj.articlelist.push({ color: '#333', focus: false })
             obj.choosed = true
             this.$set(this.myArray2, index, obj)
-            console.log(this.myArray2)
-            // this.$set(this.myArray2[index], 'choosed',true)
-
-            // console.log(obj,this.myArray2)
         },
         //取消选中
         unChoosed(ele, index) {
@@ -355,17 +343,21 @@ export default {
         },
         //文案编辑聚焦 (原定：聚焦的时候才能改变颜色)
         articleFocus(ele, index, index2, ev) {
-            let obj = Object.assign({},this.myArray2[index])
-            obj.articlelist[index2].focus = true
+            let obj = Object.assign({}, this.myArray2[index])
+            obj.articlelist = this.myArray2[index].articlelist.map((item, i) => {
+                i === index2 ? (item.focus = 1) : (item.focus = 0)
+                return { ...item }
+            })
             this.$set(this.myArray2, index, obj)
-            console.log('聚焦', ev)
         },
         //文案编辑失焦
         articleBlur(ele, index, index2, ev) {
-            let obj = Object.assign({},this.myArray2[index])
-            obj.articlelist[index2].focus = false
+            let obj = Object.assign({}, this.myArray2[index])
+            obj.articlelist = this.myArray2[index].articlelist.map((item, i) => {
+                item.focus = 0
+                return { ...item }
+            })
             this.$set(this.myArray2, index, obj)
-            console.log('失焦', ev)
         },
         clickMove(ele) {
             console.log('click move', ele)
@@ -486,5 +478,8 @@ export default {
         padding: 5px 10px;
         margin-bottom: 5px;
     }
+}
+.cursor-pointer {
+    cursor: pointer;
 }
 </style>

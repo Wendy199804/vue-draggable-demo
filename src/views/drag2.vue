@@ -69,7 +69,7 @@
         <div>
             <Draggable
                 class="empty-group"
-                 id="printcontent"
+                id="printcontent"
                 v-model="myArray2"
                 :animation="200"
                 :options="{
@@ -96,7 +96,7 @@
                         {{ element.name }}
                         <!-- <el-button circle @click.stop="deleteItem(element, index)">×</el-button> -->
                         <div class="a-component">
-                            <component v-show="!element.blob" :is="allComponents[element.component]" :id="`newImg${index}`"></component>
+                            <component v-show="!element.blob" :is="allComponents[element.component]" :id="`newImg${index}`" :ref="`newImg${index}`"></component>
                             <img :src="element.blob" style="width: 100%" />
                         </div>
 
@@ -116,8 +116,8 @@
             <el-button @click="doPrint">打印</el-button>
             <el-button @click="doToimg">转图片</el-button>
             <el-button @click="doPdf">PDF</el-button>
-            <img :src="blob" style="width:100%">
-            
+            <img :src="blob" style="width: 100%" />
+            <iframePrint v-if="printHtml" :html="printHtml" />
         </div>
     </div>
 </template>
@@ -127,6 +127,7 @@ import Draggable from 'vuedraggable'
 import allComponents from '@/components/dragItems/exportComponent'
 // import item_6 from '@/components/dragItems/item_6'
 import html2canvas from 'html2canvas'
+import iframePrint from './test'
 
 export default {
     data() {
@@ -241,10 +242,12 @@ export default {
                 animation: 2,
             },
             blob: '',
+            printHtml: '',
         }
     },
     components: {
         Draggable,
+        iframePrint,
     },
     methods: {
         ///添加按钮  *****  add
@@ -383,7 +386,7 @@ export default {
         clickMove(ele) {
             console.log('click move', ele)
         },
-        //打印
+        //打印（无样式）
         doPrint() {
             //判断iframe是否存在，不存在则创建iframe
             let iframe = document.getElementById('print-iframe')
@@ -459,26 +462,37 @@ export default {
                 type: 'image/jpeg',
             })
         },
-        doPdf(){
-            let that = this
-            event.preventDefault()
-            let canvas2 = document.createElement('canvas')
-            let _canvas = document.getElementById('printpdf')
-            let w = parseInt(window.getComputedStyle(_canvas).width)
-            let h = parseInt(window.getComputedStyle(_canvas).height)
-            canvas2.width = w * 2
-            canvas2.height = h * 2
-            canvas2.style.width = w - 1 + 'px'
-            canvas2.style.height = h - 1 + 'px'
-            let context = canvas2.getContext('2d')
-            context.scale(2, 2)
-            html2canvas(_canvas, {
-                canvas: canvas2,
-            }).then((res) => {
-                let blob = that.getBlob(res)
-                this.blob = window.URL.createObjectURL(blob)
-                console.log(res, blob)
-            })
+        //打印 （会切割组件）
+        doPdf() {
+            this.printHtml = document.getElementById('printcontent').innerHTML
+            // this.printIframeshow = false
+            setTimeout(() => {
+                window.onafterprint = this.onafterprint()
+            }, 100);
+            // let that = this
+            // event.preventDefault()
+            // let canvas2 = document.createElement('canvas')
+            // let _canvas = document.getElementById('printpdf')
+            // let w = parseInt(window.getComputedStyle(_canvas).width)
+            // let h = parseInt(window.getComputedStyle(_canvas).height)
+            // canvas2.width = w * 2
+            // canvas2.height = h * 2
+            // canvas2.style.width = w - 1 + 'px'
+            // canvas2.style.height = h - 1 + 'px'
+            // let context = canvas2.getContext('2d')
+            // context.scale(2, 2)
+            // html2canvas(_canvas, {
+            //     canvas: canvas2,
+            // }).then((res) => {
+            //     let blob = that.getBlob(res)
+            //     this.blob = window.URL.createObjectURL(blob)
+            //     console.log(res, blob)
+            // })
+        },
+        //监听打印窗口打开
+        onafterprint(){
+            this.printHtml = ''
+            console.log('after')
         }
     },
 }
@@ -495,7 +509,6 @@ export default {
         height: 700px;
         margin-right: 15px;
         overflow-y: auto;
-
     }
     & > div:nth-child(2) {
         width: 70%;
@@ -617,18 +630,7 @@ export default {
         border: 1px solid red;
         color: rgb(148, 27, 27);
         background-color: cadetblue;
-    }
-    .edit {
-        padding: 3px 10px;
-        background-color: rgba($color: #9cccec, $alpha: 0.8);
-        position: absolute;
-        top: -15px;
-        right: -15px;
-
-        & > span {
-            cursor: pointer;
-            margin-right: 3px;
-        }
+        -webkit-print-color-adjust: exact; //打印后背景色会失效
     }
 }
 </style>

@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div class="component-wrap">
         item111
     </div>
 </template>
@@ -11,5 +11,8 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-    
+    .component-wrap{
+        height: 400px;
+        border: 1px solid red;
+    }
 </style>

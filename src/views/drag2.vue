@@ -69,6 +69,7 @@
         <div>
             <Draggable
                 class="empty-group"
+                 id="printcontent"
                 v-model="myArray2"
                 :animation="200"
                 :options="{
@@ -80,7 +81,7 @@
                 chosen-class="chosen"
                 handle=".handle"
             >
-                <transition-group>
+                <transition-group id="printpdf">
                     <div v-for="(element, index) in myArray2" :key="element.id" :class="[element.delete ? 'to-right' : '', element.choosed ? 'border' : '', 'list-group-item', 'my-list-group-item', 'cursor-auto']" @click="chooseItem(element, index)">
                         <div v-show="element.choosed" class="edit">
                             <span @click.stop="unChoosed(element, index)">取消选中</span>
@@ -94,12 +95,16 @@
                         <i v-show="element.choosed" @click.stop="clickMove(element)" class="el-icon-s-unfold move-icon"></i>
                         {{ element.name }}
                         <!-- <el-button circle @click.stop="deleteItem(element, index)">×</el-button> -->
-                        <component :is="allComponents[element.component]"></component>
-                        <div v-show="element.articlelist && element.articlelist.length > 0" @click.stop class="textarea-wrap">
+                        <div class="a-component">
+                            <component v-show="!element.blob" :is="allComponents[element.component]" :id="`newImg${index}`"></component>
+                            <img :src="element.blob" style="width: 100%" />
+                        </div>
+
+                        <div v-show="element.articlelist && element.articlelist.length > 0" :style="{ border: element.choosed ? '1px dashed fuchsia' : 'none' }" @click.stop class="textarea-wrap">
                             <!-- <textarea>我是一个文本框。</textarea> -->
                             <div v-for="(item, index2) in element.articlelist" :key="index2">
                                 <!-- 文案个数 -->
-                                <div v-show="item.focus">文字颜色<el-color-picker v-model="item.color" @change="fontColorChange(index)" size="mini"></el-color-picker></div>
+                                <div v-show="element.choosed && item.focus">文字颜色<el-color-picker v-model="item.color" @change="fontColorChange(index)" size="mini"></el-color-picker></div>
                                 <div :contenteditable="element.choosed" @focus="articleFocus(item, index, index2, $event)" @blur="articleBlur(item, index, index2, $event)" :style="{ color: item.color }" class="custom-article">
                                     这是一个文案，点击可以编辑
                                 </div>
@@ -108,6 +113,11 @@
                     </div>
                 </transition-group>
             </Draggable>
+            <el-button @click="doPrint">打印</el-button>
+            <el-button @click="doToimg">转图片</el-button>
+            <el-button @click="doPdf">PDF</el-button>
+            <img :src="blob" style="width:100%">
+            
         </div>
     </div>
 </template>
@@ -116,17 +126,18 @@
 import Draggable from 'vuedraggable'
 import allComponents from '@/components/dragItems/exportComponent'
 // import item_6 from '@/components/dragItems/item_6'
+import html2canvas from 'html2canvas'
 
 export default {
     data() {
         return {
             allComponents: allComponents,
             myArray: [
-                { id: 1, name: 'a', delete: false, component: 'item_1' },
-                { id: 2, name: '??', delete: false, component: 'item_2' },
+                { id: 1, name: 'height: 400px;', delete: false, component: 'item_1' },
+                { id: 2, name: 'height: 340px;', delete: false, component: 'item_2' },
                 { id: 3, name: 'c', delete: false, component: 'item_3' },
                 { id: 4, name: 'd', delete: false, component: 'item_4' },
-                { id: 5, name: 'e', delete: false, component: 'item_5' },
+                { id: 5, name: '表格', delete: false, component: 'item_5', istable: true },
                 { id: 6, name: 'f', delete: false, component: 'item_6' },
             ],
             manager1: [
@@ -229,6 +240,7 @@ export default {
             options: {
                 animation: 2,
             },
+            blob: '',
         }
     },
     components: {
@@ -263,7 +275,7 @@ export default {
                 item.id = new Date().getTime() + 'id' + index
                 item.articleNum = 0
                 item.articlelist = []
-                return item
+                return { ...item }
             })
             let newarr = JSON.parse(JSON.stringify(arr))
             this.myArray2 = choosed_index === -1 ? [...this.myArray2, ...arr] : [...this.myArray2.slice(0, choosed_index + 1), ...arr, ...this.myArray2.slice(choosed_index + 1)]
@@ -278,7 +290,6 @@ export default {
                 this.myArray2.splice(index, 1)
             }, 200)
         },
-
         //选中（双击）
         chooseItem(ele, index) {
             if (!ele.choosed) {
@@ -329,6 +340,7 @@ export default {
         },
         //添加文案
         addArticle(ele, index) {
+            console.log(ele)
             let obj = Object.assign({}, ele)
             obj.articleNum = ele.articleNum + 1
             obj.articlelist.push({ color: '#333', focus: false })
@@ -360,7 +372,7 @@ export default {
             // this.$set(this.myArray2, index, obj)
         },
         //文字颜色变化
-        fontColorChange(index){
+        fontColorChange(index) {
             let obj = Object.assign({}, this.myArray2[index])
             obj.articlelist = this.myArray2[index].articlelist.map((item, i) => {
                 item.focus = 0
@@ -371,6 +383,103 @@ export default {
         clickMove(ele) {
             console.log('click move', ele)
         },
+        //打印
+        doPrint() {
+            //判断iframe是否存在，不存在则创建iframe
+            let iframe = document.getElementById('print-iframe')
+            if (!iframe) {
+                let el = document.getElementById('printcontent')
+                iframe = document.createElement('IFRAME')
+                let doc = null
+                // iframe.setAttribute("src", "./print.html")
+                iframe.setAttribute('id', 'print-iframe')
+                iframe.setAttribute('style', 'position:absolute;width:0px;height:0px;left:-500px;top:-500px;')
+                document.body.appendChild(iframe)
+                doc = iframe.contentWindow.document
+                //这里可以自定义样式
+                // doc.write('<html><head><link rel="stylesheet" type="text/css" href="./print.css"></head><body">'+'<div>' + el.innerHTML + '</div>'+'</body></html>')
+                doc.write("<head><link rel='stylesheet' type='text/css' href='/print.css'></head>")
+                doc.write('<div>' + el.innerHTML + '</div>')
+                // let html = '<html><head><link rel="stylesheet" type="text/css" href="./print.css"></head><body">' + '<div>' + el.innerHTML + '</div>' + '</body></html>'
+                // iframe.srcdoc = html
+                // console.log(iframe, iframe.contentWindow, doc)
+
+                doc.close()
+                iframe.contentWindow.focus()
+            }
+            iframe.contentWindow.print()
+            document.body.removeChild(iframe)
+        },
+        //逐个转图片
+        doToimg() {
+            this.myArray2.map((item, index) => {
+                if (!item.istable) {
+                    item.id = `newImg${index}`
+                    this.getImg(item.id, index)
+                }
+            })
+        },
+        getImg(newImg, index) {
+            let that = this
+            event.preventDefault()
+            let canvas2 = document.createElement('canvas')
+            let _canvas = document.getElementById(newImg)
+            let w = parseInt(window.getComputedStyle(_canvas).width)
+            let h = parseInt(window.getComputedStyle(_canvas).height)
+            //将canvas画布放大若干倍，然后盛放在较小的容器内，就显得不模糊了
+            canvas2.width = w * 2
+            canvas2.height = h * 2
+            canvas2.style.width = w - 1 + 'px'
+            canvas2.style.height = h - 1 + 'px'
+            //可以按照自己的需求，对context的参数修改,translate指的是偏移量
+            //  let context = canvas.getContext("2d");
+            //  context.translate(0,0);
+            let context = canvas2.getContext('2d')
+            context.scale(2, 2)
+            html2canvas(_canvas, {
+                canvas: canvas2,
+            }).then((res) => {
+                let blob = that.getBlob(res)
+                let obj = this.myArray2[index]
+                obj.blob = window.URL.createObjectURL(blob)
+                this.$set(this.myArray2, index, obj)
+                // console.log(res, blob)
+            })
+        },
+        getBlob(canvas) {
+            //获取blob对象
+            let data = canvas.toDataURL('image/jpeg', 1)
+            data = data.split(',')[1]
+            data = window.atob(data)
+            let ia = new Uint8Array(data.length)
+            for (let i = 0; i < data.length; i++) {
+                ia[i] = data.charCodeAt(i)
+            }
+            return new Blob([ia], {
+                type: 'image/jpeg',
+            })
+        },
+        doPdf(){
+            let that = this
+            event.preventDefault()
+            let canvas2 = document.createElement('canvas')
+            let _canvas = document.getElementById('printpdf')
+            let w = parseInt(window.getComputedStyle(_canvas).width)
+            let h = parseInt(window.getComputedStyle(_canvas).height)
+            canvas2.width = w * 2
+            canvas2.height = h * 2
+            canvas2.style.width = w - 1 + 'px'
+            canvas2.style.height = h - 1 + 'px'
+            let context = canvas2.getContext('2d')
+            context.scale(2, 2)
+            html2canvas(_canvas, {
+                canvas: canvas2,
+            }).then((res) => {
+                let blob = that.getBlob(res)
+                this.blob = window.URL.createObjectURL(blob)
+                console.log(res, blob)
+            })
+        }
     },
 }
 </script>
@@ -385,10 +494,12 @@ export default {
         width: 30%;
         height: 700px;
         margin-right: 15px;
+        overflow-y: auto;
+
     }
-    & > div:last-child {
+    & > div:nth-child(2) {
         width: 70%;
-        height: 700px;
+        height: 840px;
         padding-top: 20px;
         overflow-y: auto;
     }
@@ -404,13 +515,14 @@ export default {
 }
 .empty-group {
     width: 90%;
-    height: 100%;
+    height: 87%;
+    padding: 20px;
     border: 1px solid blueviolet;
-    // overflow-y: auto;
+    overflow-y: auto;
 
     & > span {
         display: block;
-        height: 300px;
+        // height: 300px;
         width: 100%;
         border: 1px solid red;
     }
@@ -479,7 +591,6 @@ export default {
 .textarea-wrap {
     height: auto;
     width: auto;
-    border: 1px dashed fuchsia;
     padding: 5px;
     .custom-article {
         outline: none;
@@ -490,5 +601,34 @@ export default {
 }
 .cursor-pointer {
     cursor: pointer;
+}
+/deep/ .component-wrap {
+    width: 100%;
+    color: rgb(148, 27, 27);
+    background-color: cadetblue;
+}
+@media print {
+    body {
+        font-size: 30px;
+    }
+    /deep/ .component-wrap {
+        width: 100%;
+        height: 400px;
+        border: 1px solid red;
+        color: rgb(148, 27, 27);
+        background-color: cadetblue;
+    }
+    .edit {
+        padding: 3px 10px;
+        background-color: rgba($color: #9cccec, $alpha: 0.8);
+        position: absolute;
+        top: -15px;
+        right: -15px;
+
+        & > span {
+            cursor: pointer;
+            margin-right: 3px;
+        }
+    }
 }
 </style>
